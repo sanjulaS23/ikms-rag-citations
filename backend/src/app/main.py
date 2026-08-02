@@ -7,23 +7,19 @@ from app.api import router
 from app.utils.logging import configure_logging
 from dotenv import load_dotenv
 from pathlib import Path
-
-# Load .env from project root (not backend folder)
-env_path = Path(__file__).resolve().parents[3] / ".env"
-load_dotenv(dotenv_path=env_path)
-
-# Check for demo mode
 import os
-demo_mode = os.getenv("DEMO_MODE", "false").lower() == "true"
 
-if demo_mode:
-    print("\n✅ DEMO MODE ENABLED - Using mock services (no API keys required)\n")
-else:
-    # Verify critical keys are loaded
-    if not os.getenv("OPENAI_API_KEY"):
-        print("⚠️  WARNING: OPENAI_API_KEY not set in .env")
-    if not os.getenv("PINECONE_API_KEY"):
-        print("⚠️  WARNING: PINECONE_API_KEY not set in .env")
+# Load .env from project root (not backend folder).
+# override=True ensures .env values always win over stale system env vars.
+env_path = Path(__file__).resolve().parents[3] / ".env"
+load_dotenv(dotenv_path=env_path, override=True)
+
+if not os.getenv("OLLAMA_BASE_URL"):
+    print("⚠️  WARNING: OLLAMA_BASE_URL not set in .env")
+if not os.getenv("OLLAMA_MODEL"):
+    print("⚠️  WARNING: OLLAMA_MODEL not set in .env")
+if not os.getenv("OLLAMA_EMBEDDING_MODEL"):
+    print("⚠️  WARNING: OLLAMA_EMBEDDING_MODEL not set in .env")
 
 configure_logging()
 

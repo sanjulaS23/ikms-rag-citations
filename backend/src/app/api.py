@@ -102,6 +102,13 @@ async def qa_endpoint(payload: QARequest):
     except HTTPException:
         raise
     except Exception as exc:
+        # OpenAI auth failures are common when env vars are stale or overridden.
+        err_text = str(exc)
+        if "invalid_api_key" in err_text or "Incorrect API key provided" in err_text:
+            raise HTTPException(
+                status_code=401,
+                detail="OpenAI authentication failed. Verify OPENAI_API_KEY and restart the server.",
+            ) from exc
         logger.exception("QA endpoint failed")
         raise HTTPException(status_code=500, detail="Internal server error") from exc
 

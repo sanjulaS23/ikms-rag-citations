@@ -6,7 +6,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
 
 from app.core.vectorstore.pinecone_store import get_vectorstore
-from app.services.demo_service import get_demo_mode, mock_index_pdf
 from app.utils.logging import get_logger
 
 
@@ -15,12 +14,7 @@ logger = get_logger(__name__)
 
 def index_pdf(file_path: str, namespace: str | None = None) -> dict:
     """Index a PDF file by extracting text, splitting chunks, and storing in Pinecone."""
-    
-    # Check if demo mode is enabled
-    if get_demo_mode():
-        logger.info("[DEMO MODE] Using mock indexing service")
-        return mock_index_pdf(file_path=file_path)
-    
+
     if not file_path or not os.path.exists(file_path):
         raise FileNotFoundError(f"PDF file not found: {file_path}")
 
@@ -71,12 +65,7 @@ def index_pdf(file_path: str, namespace: str | None = None) -> dict:
 
 def index_pdf_from_bytes(file_bytes: bytes, filename: str, namespace: str | None = None) -> dict:
     """Index a PDF from bytes (useful for uploaded files)."""
-    
-    # Check if demo mode is enabled
-    if get_demo_mode():
-        logger.info("[DEMO MODE] Using mock indexing service for upload")
-        return mock_index_pdf(file_bytes=file_bytes, filename=filename)
-    
+
     if not filename.lower().endswith(".pdf"):
         raise ValueError("Only PDF files are supported")
 

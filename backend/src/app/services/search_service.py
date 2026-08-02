@@ -1,7 +1,4 @@
-from langchain_core.documents import Document
-
 from app.core.retrieval.retriever import retrieve_chunks
-from app.services.demo_service import get_demo_mode, mock_retrieve_chunks, mock_search_response
 from app.utils.logging import get_logger
 
 
@@ -16,12 +13,6 @@ def search_pdfs(query: str, top_k: int = 5, namespace: str | None = None) -> dic
     if top_k < 1 or top_k > 50:
         raise ValueError("top_k must be between 1 and 50")
 
-    # Check if demo mode is enabled
-    if get_demo_mode():
-        logger.info("[DEMO MODE] Using mock search service")
-        return mock_search_response(query, top_k)
-
-    # Production mode: use real retrieval
     try:
         docs = retrieve_chunks(query, top_k)
         logger.info("Retrieved %d documents for query: %s", len(docs), query)

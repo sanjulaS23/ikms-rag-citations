@@ -6,7 +6,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/qa": "http://localhost:8000",
-      "/index-pdf": "http://localhost:8000"
+      "/index-pdf": "http://localhost:8000",
+      "/upload-pdf": "http://localhost:8000"
     }
   }
 });
