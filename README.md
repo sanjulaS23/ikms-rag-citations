@@ -9,6 +9,8 @@ This project uses:
 - local FAISS vector store for embeddings
 - PDF ingestion and citation-aware answer generation
 
+![Project Demo](demo.png) 
+![Project Demo](demo2.png) 
 ## Features
 
 - Upload PDF documents
