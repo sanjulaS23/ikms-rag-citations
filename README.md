@@ -2,6 +2,8 @@
 
 A local, evidence-aware Retrieval-Augmented Generation (RAG) application for querying PDF documents with citations.
 
+ Live Demo : https://congress-companion-gangly.ngrok-free.dev/
+
 This project uses:
 - FastAPI backend
 - Vite + React + TypeScript frontend
