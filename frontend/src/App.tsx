@@ -1,4 +1,7 @@
 import { useMemo, useRef, useState } from "react";
+const citationRegex = /\[C\d+\]/g;
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 type CitationInfo = {
   page: number | null;
@@ -70,7 +73,7 @@ export default function App() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/upload-pdf", {
+      const response = await fetch(`${API_BASE_URL}/upload-pdf`, {
         method: "POST",
         body: formData,
       });
@@ -110,7 +113,7 @@ export default function App() {
     const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch("/qa", {
+      const response = await fetch(`${API_BASE_URL}/qa`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),
