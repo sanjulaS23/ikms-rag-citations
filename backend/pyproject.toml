@@ -1,2 +1,21 @@
+[project]
+name = "ikms-rag-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+	"fastapi",
+	"uvicorn[standard]",
+	"pydantic",
+	"python-dotenv",
+	"langchain-core",
+	"langchain-ollama",
+	"langchain-community",
+	"langchain-text-splitters",
+	"langgraph",
+	"faiss-cpu",
+	"pypdf",
+	"python-multipart",
+]
+
 [tool.vercel]
 entrypoint = "src.app.main:app"
