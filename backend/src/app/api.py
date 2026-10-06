@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, File, UploadFile
 from pydantic import BaseModel, Field
 import os
 
+from app.config import get_env_value
 from app.services.index_service import index_pdf, index_pdf_from_bytes
 from app.services.qa_service import run_qa
 from app.services.search_service import search_pdfs
@@ -21,8 +22,8 @@ async def debug_pinecone():
     try:
         from app.core.vectorstore.pinecone_store import get_vectorstore
         
-        api_key = os.getenv("PINECONE_API_KEY")
-        index_name = os.getenv("PINECONE_INDEX")
+        api_key = get_env_value("PINECONE_API_KEY")
+        index_name = get_env_value("PINECONE_INDEX")
         
         if not api_key:
             return {"status": "error", "message": "PINECONE_API_KEY not set"}
@@ -36,14 +37,15 @@ async def debug_pinecone():
             "status": "ok",
             "message": "Pinecone connected successfully",
             "index": index_name,
-            "api_key_prefix": api_key[:20] + "..." if api_key else None
+            "api_key_set": bool(api_key),
+            "index_set": bool(index_name),
         }
     except Exception as e:
         return {
             "status": "error",
             "message": str(e),
-            "api_key_set": bool(os.getenv("PINECONE_API_KEY")),
-            "index_set": bool(os.getenv("PINECONE_INDEX"))
+            "api_key_set": bool(get_env_value("PINECONE_API_KEY")),
+            "index_set": bool(get_env_value("PINECONE_INDEX"))
         }
 
 

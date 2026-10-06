@@ -1,6 +1,6 @@
 import pytest
 
-from app.config import get_llm_backend, get_vector_backend
+from app.config import get_env_value, get_llm_backend, get_vector_backend
 
 
 def test_get_llm_backend_prefers_cloud_openai_when_local_ollama_is_disabled(monkeypatch):
@@ -16,3 +16,8 @@ def test_get_vector_backend_prefers_pinecone_when_configured(monkeypatch):
     monkeypatch.setenv("PINECONE_INDEX", "demo-index")
 
     assert get_vector_backend() == "pinecone"
+
+
+def test_get_env_value_strips_trailing_newline(monkeypatch):
+    monkeypatch.setenv("PINECONE_API_KEY", "test-key\n")
+    assert get_env_value("PINECONE_API_KEY") == "test-key"

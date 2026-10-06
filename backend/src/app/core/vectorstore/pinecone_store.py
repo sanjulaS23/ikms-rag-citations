@@ -4,7 +4,7 @@ from pathlib import Path
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from app.config import get_llm_backend, get_vector_backend
+from app.config import get_env_value, get_llm_backend, get_vector_backend
 from app.utils.logging import get_logger
 
 
@@ -21,16 +21,16 @@ def get_embeddings():
                 "Install the local Ollama dependencies for development mode."
             ) from exc
 
-        model = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
-        base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        model = get_env_value("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
+        base_url = get_env_value("OLLAMA_BASE_URL", "http://localhost:11434")
         return OllamaEmbeddings(model=model, base_url=base_url)
 
-    api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+    api_key = get_env_value("LLM_API_KEY") or get_env_value("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("LLM_API_KEY is required for cloud embeddings.")
 
     return OpenAIEmbeddings(
-        model=os.getenv("LLM_EMBEDDING_MODEL", "text-embedding-3-small"),
+        model=get_env_value("LLM_EMBEDDING_MODEL", "text-embedding-3-small"),
         api_key=api_key,
     )
 
@@ -104,7 +104,7 @@ class PineconeVectorStoreAdapter:
 
     def __init__(self, embeddings, namespace: str | None = None):
         self.embeddings = embeddings
-        self.namespace = namespace or os.getenv("PINECONE_NAMESPACE", "default")
+        self.namespace = namespace or get_env_value("PINECONE_NAMESPACE", "default")
         self.store = self._build_store()
 
     def _build_store(self):
@@ -114,8 +114,8 @@ class PineconeVectorStoreAdapter:
         except ImportError as exc:
             raise RuntimeError("Pinecone dependencies are missing from the backend environment") from exc
 
-        api_key = os.getenv("PINECONE_API_KEY")
-        index_name = os.getenv("PINECONE_INDEX")
+        api_key = get_env_value("PINECONE_API_KEY")
+        index_name = get_env_value("PINECONE_INDEX")
         if not api_key or not index_name:
             raise RuntimeError("PINECONE_API_KEY and PINECONE_INDEX must be configured for cloud vector storage.")
 
@@ -155,8 +155,8 @@ def get_vectorstore():
             "Install the local Ollama dependencies for development mode."
         ) from exc
 
-    embedding_model = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest").strip()
-    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").strip()
+    embedding_model = get_env_value("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
+    base_url = get_env_value("OLLAMA_BASE_URL", "http://localhost:11434")
     embeddings = OllamaEmbeddings(model=embedding_model, base_url=base_url)
 
     project_root = Path(__file__).resolve().parents[5]

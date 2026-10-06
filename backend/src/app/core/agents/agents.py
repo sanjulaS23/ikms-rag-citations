@@ -4,7 +4,7 @@ from functools import lru_cache
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
-from app.config import get_llm_backend
+from app.config import get_env_value, get_llm_backend
 from app.core.agents.prompts import ANSWER_PROMPT, VERIFICATION_PROMPT
 from app.core.agents.state import QAState
 from app.core.retrieval.retriever import retrieve_chunks
@@ -27,17 +27,17 @@ def get_chat_llm():
             ) from exc
 
         return ChatOllama(
-            model=os.getenv("OLLAMA_MODEL", "gemma3:12b"),
-            base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            model=get_env_value("OLLAMA_MODEL", "gemma3:12b"),
+            base_url=get_env_value("OLLAMA_BASE_URL", "http://localhost:11434"),
             temperature=0.2,
         )
 
-    api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+    api_key = get_env_value("LLM_API_KEY") or get_env_value("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("LLM_API_KEY is required when LOCAL_OLLAMA is disabled.")
 
     return ChatOpenAI(
-        model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
+        model=get_env_value("LLM_MODEL", "gpt-4o-mini"),
         api_key=api_key,
         temperature=0.2,
     )

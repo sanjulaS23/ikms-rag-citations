@@ -7,6 +7,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(PROJECT_ROOT / ".env", override=False)
 
 
+def get_env_value(name: str, default: str | None = None) -> str | None:
+    value = os.getenv(name, default)
+    if value is None:
+        return default
+    return value.strip()
+
+
 def _as_bool(value: str | None, default: bool = False) -> bool:
     if value is None:
         return default
@@ -20,18 +27,18 @@ def _split_csv(value: str | None) -> list[str]:
 
 
 def get_llm_backend() -> str:
-    if _as_bool(os.getenv("LOCAL_OLLAMA"), False):
+    if _as_bool(get_env_value("LOCAL_OLLAMA"), False):
         return "ollama"
 
-    configured = (os.getenv("CLOUD_LLM") or "openai").strip().lower()
+    configured = (get_env_value("CLOUD_LLM") or "openai").strip().lower()
     return configured or "openai"
 
 
 def get_vector_backend() -> str:
-    configured = (os.getenv("VECTOR_DB") or "pinecone").strip().lower()
+    configured = (get_env_value("VECTOR_DB") or "pinecone").strip().lower()
 
     if configured == "pinecone":
-        if os.getenv("PINECONE_API_KEY") and os.getenv("PINECONE_INDEX"):
+        if get_env_value("PINECONE_API_KEY") and get_env_value("PINECONE_INDEX"):
             return "pinecone"
         return "local"
 
@@ -42,8 +49,8 @@ def get_vector_backend() -> str:
 
 
 def get_allowed_origins() -> list[str]:
-    values = _split_csv(os.getenv("FRONTEND_ORIGIN"))
-    values.extend(_split_csv(os.getenv("ALLOWED_ORIGINS")))
+    values = _split_csv(get_env_value("FRONTEND_ORIGIN"))
+    values.extend(_split_csv(get_env_value("ALLOWED_ORIGINS")))
 
     if not values:
         values = [

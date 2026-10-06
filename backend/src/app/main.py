@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api import router
-from app.config import get_allowed_origins
+from app.config import get_allowed_origins, get_env_value
 from app.utils.logging import configure_logging
 
 env_path = Path(__file__).resolve().parents[3] / ".env"
@@ -14,15 +14,15 @@ if env_path.exists():
     from dotenv import load_dotenv
     load_dotenv(dotenv_path=env_path, override=False)
 
-if os.getenv("LOCAL_OLLAMA", "false").lower() in {"1", "true", "yes", "on"}:
-    if not os.getenv("OLLAMA_BASE_URL"):
+if get_env_value("LOCAL_OLLAMA", "false").lower() in {"1", "true", "yes", "on"}:
+    if not get_env_value("OLLAMA_BASE_URL"):
         print("⚠️  WARNING: OLLAMA_BASE_URL not set in .env")
-    if not os.getenv("OLLAMA_MODEL"):
+    if not get_env_value("OLLAMA_MODEL"):
         print("⚠️  WARNING: OLLAMA_MODEL not set in .env")
-    if not os.getenv("OLLAMA_EMBEDDING_MODEL"):
+    if not get_env_value("OLLAMA_EMBEDDING_MODEL"):
         print("⚠️  WARNING: OLLAMA_EMBEDDING_MODEL not set in .env")
 else:
-    if not os.getenv("LLM_API_KEY"):
+    if not get_env_value("LLM_API_KEY"):
         print("⚠️  WARNING: LLM_API_KEY not set for cloud provider mode")
 
 configure_logging()
