@@ -20,7 +20,6 @@ type AnswerPart = {
   citationId?: string;
 };
 
-const citationRegex = /\[C\d+\]/g;
 
 const parseAnswer = (answer: string): AnswerPart[] => {
   const parts: AnswerPart[] = [];
