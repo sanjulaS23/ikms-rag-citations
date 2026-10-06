@@ -1,25 +1,29 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-
-from app.api import router
-from app.utils.logging import configure_logging
-from dotenv import load_dotenv
 from pathlib import Path
 import os
 
-# Load .env from project root (not backend folder).
-# override=True ensures .env values always win over stale system env vars.
-env_path = Path(__file__).resolve().parents[3] / ".env"
-load_dotenv(dotenv_path=env_path, override=True)
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-if not os.getenv("OLLAMA_BASE_URL"):
-    print("⚠️  WARNING: OLLAMA_BASE_URL not set in .env")
-if not os.getenv("OLLAMA_MODEL"):
-    print("⚠️  WARNING: OLLAMA_MODEL not set in .env")
-if not os.getenv("OLLAMA_EMBEDDING_MODEL"):
-    print("⚠️  WARNING: OLLAMA_EMBEDDING_MODEL not set in .env")
+from app.api import router
+from app.config import get_allowed_origins
+from app.utils.logging import configure_logging
+
+env_path = Path(__file__).resolve().parents[3] / ".env"
+if env_path.exists():
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=env_path, override=False)
+
+if os.getenv("LOCAL_OLLAMA", "false").lower() in {"1", "true", "yes", "on"}:
+    if not os.getenv("OLLAMA_BASE_URL"):
+        print("⚠️  WARNING: OLLAMA_BASE_URL not set in .env")
+    if not os.getenv("OLLAMA_MODEL"):
+        print("⚠️  WARNING: OLLAMA_MODEL not set in .env")
+    if not os.getenv("OLLAMA_EMBEDDING_MODEL"):
+        print("⚠️  WARNING: OLLAMA_EMBEDDING_MODEL not set in .env")
+else:
+    if not os.getenv("LLM_API_KEY"):
+        print("⚠️  WARNING: LLM_API_KEY not set for cloud provider mode")
 
 configure_logging()
 
@@ -28,15 +32,15 @@ app = FastAPI(
     version="1.0.0",
     description="Evidence-Aware RAG System with PDF Indexing and Citation Support",
     docs_url="/docs",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
 )
 
-# Enable CORS for local development and frontend access
+allowed_origins = get_allowed_origins()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 

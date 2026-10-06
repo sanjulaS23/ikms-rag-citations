@@ -2,8 +2,10 @@ import os
 from functools import lru_cache
 
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
+from app.config import get_llm_backend
 from app.core.agents.prompts import ANSWER_PROMPT, VERIFICATION_PROMPT
 from app.core.agents.state import QAState
 from app.core.retrieval.retriever import retrieve_chunks
@@ -15,6 +17,25 @@ from app.utils.text import extract_citation_ids, remove_invalid_citations
 logger = get_logger(__name__)
 
 
+def get_chat_llm():
+    if get_llm_backend() == "ollama":
+        return ChatOllama(
+            model=os.getenv("OLLAMA_MODEL", "gemma3:12b"),
+            base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            temperature=0.2,
+        )
+
+    api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("LLM_API_KEY is required when LOCAL_OLLAMA is disabled.")
+
+    return ChatOpenAI(
+        model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
+        api_key=api_key,
+        temperature=0.2,
+    )
+
+
 def _retrieve_node(state: QAState) -> QAState:
     docs = retrieve_chunks(state["question"], state.get("top_k", 4))
     context, citation_map = serialize_chunks_with_ids(docs)
@@ -22,11 +43,7 @@ def _retrieve_node(state: QAState) -> QAState:
 
 
 def _answer_node(state: QAState) -> QAState:
-    llm = ChatOllama(
-        model=os.getenv("OLLAMA_MODEL", "gemma3:12b"),
-        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-        temperature=0.2,
-    )
+    llm = get_chat_llm()
     messages = ANSWER_PROMPT.format_messages(
         question=state["question"],
         context=state.get("context", ""),
@@ -43,11 +60,7 @@ def _verify_node(state: QAState) -> QAState:
     if not valid_ids:
         return {"answer": state.get("answer", "")}
 
-    llm = ChatOllama(
-        model=os.getenv("OLLAMA_MODEL", "gemma3:12b"),
-        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-        temperature=0.1,
-    )
+    llm = get_chat_llm()
     messages = VERIFICATION_PROMPT.format_messages(
         valid_ids=", ".join(valid_ids),
         context=state.get("context", ""),

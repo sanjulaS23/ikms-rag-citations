@@ -2,11 +2,30 @@ import os
 from pathlib import Path
 
 from langchain_core.documents import Document
+from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
+from app.config import get_llm_backend, get_vector_backend
 from app.utils.logging import get_logger
 
 
 logger = get_logger(__name__)
+
+
+def get_embeddings():
+    if get_llm_backend() == "ollama":
+        model = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
+        base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        return OllamaEmbeddings(model=model, base_url=base_url)
+
+    api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("LLM_API_KEY is required for cloud embeddings.")
+
+    return OpenAIEmbeddings(
+        model=os.getenv("LLM_EMBEDDING_MODEL", "text-embedding-3-small"),
+        api_key=api_key,
+    )
 
 
 class LocalVectorStore:
@@ -73,8 +92,53 @@ class LocalVectorStore:
         return self.store.similarity_search(query, k=k, **kwargs)
 
 
+class PineconeVectorStoreAdapter:
+    """Thin wrapper around a cloud Pinecone vectorstore."""
+
+    def __init__(self, embeddings, namespace: str | None = None):
+        self.embeddings = embeddings
+        self.namespace = namespace or os.getenv("PINECONE_NAMESPACE", "default")
+        self.store = self._build_store()
+
+    def _build_store(self):
+        try:
+            from langchain_pinecone import PineconeVectorStore
+            from pinecone import Pinecone
+        except ImportError as exc:
+            raise RuntimeError("Pinecone dependencies are missing from the backend environment") from exc
+
+        api_key = os.getenv("PINECONE_API_KEY")
+        index_name = os.getenv("PINECONE_INDEX")
+        if not api_key or not index_name:
+            raise RuntimeError("PINECONE_API_KEY and PINECONE_INDEX must be configured for cloud vector storage.")
+
+        client = Pinecone(api_key=api_key)
+        index = client.Index(index_name)
+        return PineconeVectorStore(index=index, embedding=self.embeddings, text_key="text", namespace=self.namespace)
+
+    def add_texts(self, texts, metadatas=None, namespace=None):
+        if not texts:
+            return 0
+
+        docs = [
+            Document(page_content=text, metadata=meta or {})
+            for text, meta in zip(texts, metadatas or [{} for _ in texts])
+        ]
+        self.store.add_documents(docs)
+        return len(texts)
+
+    def similarity_search(self, query, k=4, **kwargs):
+        return self.store.similarity_search(query, k=k, namespace=self.namespace, **kwargs)
+
+
 def get_vectorstore():
-    """Create or load a local FAISS vectorstore."""
+    """Create or load a vectorstore based on the configured backend."""
+    backend = get_vector_backend()
+
+    if backend == "pinecone":
+        logger.info("Using Pinecone vector store")
+        return PineconeVectorStoreAdapter(embeddings=get_embeddings())
+
     try:
         from langchain_ollama import OllamaEmbeddings
     except ImportError as exc:

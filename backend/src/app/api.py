@@ -11,6 +11,7 @@ from app.utils.logging import get_logger
 logger = get_logger(__name__)
 
 router = APIRouter()
+MAX_PDF_SIZE_BYTES = 20 * 1024 * 1024
 
 
 # Debug Endpoint
@@ -139,15 +140,21 @@ async def upload_pdf_endpoint(file: UploadFile = File(...), namespace: str | Non
     try:
         logger.info(f"Upload request: filename={file.filename}, content_type={file.content_type}")
         
-        if file.content_type != "application/pdf":
+        if file.content_type not in {"application/pdf", "application/octet-stream"}:
             logger.warning(f"Invalid content type: {file.content_type}")
             raise HTTPException(status_code=400, detail="File must be a PDF")
 
         file_bytes = await file.read()
         logger.info(f"Read {len(file_bytes)} bytes from {file.filename}")
-        
+
         if not file_bytes:
             raise HTTPException(status_code=400, detail="File is empty")
+
+        if len(file_bytes) > MAX_PDF_SIZE_BYTES:
+            raise HTTPException(status_code=413, detail="PDF exceeds the 20MB size limit")
+
+        if not file.filename or not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
         result = index_pdf_from_bytes(file_bytes, file.filename or "document.pdf", namespace)
         logger.info(f"Upload successful: {result}")
@@ -158,10 +165,8 @@ async def upload_pdf_endpoint(file: UploadFile = File(...), namespace: str | Non
         logger.error(f"ValueError during upload: {str(exc)}")
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        logger.exception(f"CRITICAL ERROR during upload: {str(exc)}")
-        import traceback
-        print(f"FULL TRACEBACK:\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(exc)}") from exc
+        logger.exception("CRITICAL ERROR during upload")
+        raise HTTPException(status_code=500, detail="Failed to process PDF upload") from exc
 
 
 # Search endpoint
@@ -186,8 +191,5 @@ async def search_endpoint(payload: SearchRequest):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("Search endpoint failed")
-        print(f"🔴 SEARCH ERROR: {type(exc).__name__}: {str(exc)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error: {str(exc)[:100]}") from exc
+        raise HTTPException(status_code=500, detail="Search failed") from exc
 

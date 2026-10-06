@@ -55,6 +55,12 @@ export default function App() {
 
   const answerParts = useMemo(() => parseAnswer(answer), [answer]);
   const REQUEST_TIMEOUT_MS = 180000;
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+
+  const apiFetch = async (path: string, init: RequestInit = {}) => {
+    const url = `${API_BASE_URL || ""}${path}`;
+    return fetch(url, init);
+  };
 
   const handleUploadPDF = async () => {
     if (!selectedFile) {
@@ -70,7 +76,7 @@ export default function App() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/upload-pdf", {
+      const response = await apiFetch("/upload-pdf", {
         method: "POST",
         body: formData,
       });
@@ -110,7 +116,7 @@ export default function App() {
     const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch("/qa", {
+      const response = await apiFetch("/qa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),

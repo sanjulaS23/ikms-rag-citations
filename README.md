@@ -1,156 +1,144 @@
-# IKMS RAG Citations
+# IKMS RAG
 
-A local, evidence-aware Retrieval-Augmented Generation (RAG) application for querying PDF documents with citations.
+IKMS RAG is an evidence-aware document Q&A application for PDF files. It ingests uploaded documents, splits them into chunks, retrieves the most relevant evidence, and answers questions with inline citations and source snippets.
 
- Live Demo : https://congress-companion-gangly.ngrok-free.dev/
+## Architecture
 
-This project uses:
-- FastAPI backend
-- Vite + React + TypeScript frontend
-- Ollama for local LLM inference
-- local FAISS vector store for embeddings
-- PDF ingestion and citation-aware answer generation
+React/Vite
+    ↓
+Vercel
+    ↓
+FastAPI
+    ↓
+Cloud LLM API
+    ↓
+Vector Database
 
-![Project Demo](demo.png) 
-![Project Demo](demo2.png) 
 ## Features
 
-- Upload PDF documents
-- Split and index text into chunks
-- Retrieve relevant content with vector similarity
-- Generate answers grounded in retrieved evidence
-- Display citations and source snippets
-- Run fully local without cloud API keys
+- PDF upload and validation
+- PDF text extraction and chunking
+- semantic retrieval
+- RAG question answering
+- citation-aware answer generation
+- source evidence display with page references
 
-## Tech Stack
+## Local Development
 
-- Backend: Python, FastAPI, LangChain, LangGraph
-- Frontend: React, TypeScript, Vite, Tailwind CSS
-- AI: Ollama (`gemma3:12b`, `all-minilm`)
-- Vector store: FAISS
-
-## Project Structure
-
-```text
-IKMS_RAG/
-├── backend/
-│   ├── src/
-│   │   └── app/
-│   ├── requirements.txt
-│   └── pytest.ini
-├── frontend/
-│   ├── src/
-│   ├── package.json
-│   └── vite.config.ts
-├── .env.example
-├── .gitignore
-├── requirements.txt
-├── README.md
-└── .faiss_store/
-```
-
-## Prerequisites
-
-Before running the app, install:
+### Prerequisites
 
 - Python 3.11+
 - Node.js 18+
-- Ollama
-- Local Ollama models:
-  - `gemma3:12b`
-  - `all-minilm`
-
-Install models with:
-
-```bash
-ollama pull gemma3:12b
-ollama pull all-minilm
-```
-
-## Setup
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/sanjulaS23/ikms-rag-citations.git
-cd ikms-rag-citations
-```
-
-2. Create a virtual environment:
-
-```bash
-python -m venv .venv
-```
-
-3. Activate it:
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-4. Install Python dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-5. Install frontend dependencies:
-
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-6. Configure local environment:
-
-```bash
-copy .env.example .env
-```
-
-Then verify the following values:
-
-```env
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gemma3:12b
-OLLAMA_EMBEDDING_MODEL=all-minilm
-```
-
-## Run the Application
-
-### Backend
-
-```bash
-cd backend
-set PYTHONPATH=src
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
+- Optional: Ollama installed locally for dev-only mode
 
 ### Frontend
 
 ```bash
 cd frontend
+npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Then open:
+### Backend
 
-- Frontend: http://localhost:5173
-- Backend API Docs: http://localhost:8000/docs
+```bash
+cd D:\Projects\IKMS_RAG
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --app-dir backend/src --host 0.0.0.0 --port 8000 --reload
+```
 
-## Usage
+### Optional local Ollama mode
 
-1. Upload a PDF file using the UI.
-2. Ask a question about the document.
-3. Review the answer and the cited source snippets.
+```env
+LOCAL_OLLAMA=true
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=gemma3:12b
+OLLAMA_EMBEDDING_MODEL=all-minilm
+```
 
-## Notes
+If Ollama is not available, set `LOCAL_OLLAMA=false` and configure a cloud LLM API key.
 
-- This project is designed for offline/local use with Ollama.
-- The FAISS index is stored locally under `.faiss_store/`.
-- The app is optimized for evidence-grounded answers with citations.
+## Environment Variables
+
+Copy [.env.example](.env.example) to `.env` and fill in the values for your environment.
+
+Required variables:
+
+- `VITE_API_BASE_URL`: public backend URL used by the frontend in production
+- `FRONTEND_ORIGIN`: exact frontend origin allowed by FastAPI CORS
+- `LOCAL_OLLAMA`: `true` for local dev with Ollama, `false` for cloud mode
+- `CLOUD_LLM`: LLM provider (`openai` is the current default)
+- `LLM_API_KEY`: cloud LLM provider API key
+- `LLM_MODEL`: cloud chat model, e.g. `gpt-4o-mini`
+- `LLM_EMBEDDING_MODEL`: cloud embedding model, e.g. `text-embedding-3-small`
+- `VECTOR_DB`: `pinecone` for the managed vector store
+- `PINECONE_API_KEY`: Pinecone API key
+- `PINECONE_INDEX`: Pinecone index name
+- `PINECONE_NAMESPACE`: optional vector namespace
+
+## Backend Deployment
+
+This project is designed for a public cloud backend such as Render or Railway.
+
+Recommended steps:
+
+1. Create a FastAPI service on Render.
+2. Add the environment variables from [.env.example](.env.example).
+3. Set `LOCAL_OLLAMA=false`.
+4. Add `LLM_API_KEY` and `PINECONE_API_KEY`.
+5. Deploy the backend from the repository.
+6. Confirm `/health` responds successfully.
+
+## Frontend Deployment
+
+Deploy the frontend to Vercel with:
+
+```env
+VITE_API_BASE_URL=https://your-render-backend-url
+```
+
+The frontend should not hard-code `localhost`, `127.0.0.1`, or `ngrok` in production.
+
+## Production Deployment
+
+The final public architecture is:
+
+- Vercel for the React UI
+- Render/Railway for the FastAPI service
+- OpenAI or another cloud LLM provider for generation
+- Pinecone for persistent vector retrieval
+
+This removes the dependency on your local Windows PC, local Ollama, and ngrok tunnels.
+
+## Troubleshooting
+
+### CORS errors
+
+- Confirm `FRONTEND_ORIGIN` matches the exact Vercel URL
+- Ensure the backend is not using wildcard origins with credentials enabled
+
+### Backend unavailable
+
+- Check the deployed health endpoint: `/health`
+- Verify the backend service is running and the port is exposed
+
+### LLM API errors
+
+- Confirm `LLM_API_KEY` is set
+- Confirm `LLM_MODEL` is valid for the selected cloud provider
+- Ensure `LOCAL_OLLAMA=false` if using the cloud mode
+
+### Vector database errors
+
+- Check `PINECONE_API_KEY`
+- Confirm the `PINECONE_INDEX` exists
+- Confirm the backend has network access to the vector database
+
+### PDF upload errors
+
+- Verify the uploaded file is a valid PDF
+- Check file size is below the backend limit
+- Inspect backend logs for indexing failures
 
 ## License
 
