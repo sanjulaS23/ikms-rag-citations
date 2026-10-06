@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 from langchain_core.documents import Document
-from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
 
 from app.config import get_llm_backend, get_vector_backend
@@ -14,6 +13,14 @@ logger = get_logger(__name__)
 
 def get_embeddings():
     if get_llm_backend() == "ollama":
+        try:
+            from langchain_ollama import OllamaEmbeddings
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "LOCAL_OLLAMA=true but langchain_ollama is not installed. "
+                "Install the local Ollama dependencies for development mode."
+            ) from exc
+
         model = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
         base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         return OllamaEmbeddings(model=model, base_url=base_url)
@@ -141,9 +148,12 @@ def get_vectorstore():
 
     try:
         from langchain_ollama import OllamaEmbeddings
-    except ImportError as exc:
+    except ModuleNotFoundError as exc:
         logger.error("Ollama embeddings library not installed: %s", exc)
-        raise RuntimeError("langchain-ollama must be installed") from exc
+        raise RuntimeError(
+            "LOCAL_OLLAMA=true but langchain_ollama is not installed. "
+            "Install the local Ollama dependencies for development mode."
+        ) from exc
 
     embedding_model = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest").strip()
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").strip()

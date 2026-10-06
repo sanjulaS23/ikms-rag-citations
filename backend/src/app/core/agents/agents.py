@@ -1,7 +1,6 @@
 import os
 from functools import lru_cache
 
-from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
@@ -19,6 +18,14 @@ logger = get_logger(__name__)
 
 def get_chat_llm():
     if get_llm_backend() == "ollama":
+        try:
+            from langchain_ollama import ChatOllama
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "LOCAL_OLLAMA=true but langchain_ollama is not installed. "
+                "Install the local Ollama dependencies for development mode."
+            ) from exc
+
         return ChatOllama(
             model=os.getenv("OLLAMA_MODEL", "gemma3:12b"),
             base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
