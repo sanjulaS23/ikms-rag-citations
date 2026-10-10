@@ -1,7 +1,7 @@
 import os
 from functools import lru_cache
 
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, StateGraph
 
 from app.config import get_env_value, get_llm_backend
@@ -32,16 +32,17 @@ def get_chat_llm():
             temperature=0.2,
         )
 
-    api_key = get_env_value("LLM_API_KEY") or get_env_value("OPENAI_API_KEY")
+    api_key = get_env_value("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("LLM_API_KEY is required when LOCAL_OLLAMA is disabled.")
+        raise RuntimeError(
+            "GEMINI_API_KEY is required when LOCAL_OLLAMA is disabled."
+        )
 
-    return ChatOpenAI(
-        model=get_env_value("LLM_MODEL", "gpt-4o-mini"),
-        api_key=api_key,
+    return ChatGoogleGenerativeAI(
+        model=get_env_value("LLM_MODEL", "gemini-3.5-flash-lite"),
+        google_api_key=api_key,
         temperature=0.2,
     )
-
 
 def _retrieve_node(state: QAState) -> QAState:
     docs = retrieve_chunks(state["question"], state.get("top_k", 4))

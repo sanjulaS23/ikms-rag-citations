@@ -2,8 +2,7 @@ import os
 from pathlib import Path
 
 from langchain_core.documents import Document
-from langchain_openai import OpenAIEmbeddings
-
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.config import get_env_value, get_llm_backend, get_vector_backend
 from app.utils.logging import get_logger
 
@@ -25,14 +24,15 @@ def get_embeddings():
         base_url = get_env_value("OLLAMA_BASE_URL", "http://localhost:11434")
         return OllamaEmbeddings(model=model, base_url=base_url)
 
-    api_key = get_env_value("LLM_API_KEY") or get_env_value("OPENAI_API_KEY")
+    api_key = get_env_value("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("LLM_API_KEY is required for cloud embeddings.")
+     raise RuntimeError("GEMINI_API_KEY is required for Gemini embeddings.")
 
-    return OpenAIEmbeddings(
-        model=get_env_value("LLM_EMBEDDING_MODEL", "text-embedding-3-small"),
-        api_key=api_key,
-    )
+    return GoogleGenerativeAIEmbeddings(
+    model="models/gemini-embedding-2",
+    google_api_key=api_key,
+    output_dimensionality=3072,
+)
 
 
 class LocalVectorStore:
