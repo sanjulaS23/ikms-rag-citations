@@ -9,6 +9,7 @@ An evidence-aware Retrieval-Augmented Generation (RAG) application that allows u
 
 ![Project Demo](demo.png) 
 ![Project Demo](demo2.png) 
+![Project Demo](demo3.png) 
 
 ## Features
 
